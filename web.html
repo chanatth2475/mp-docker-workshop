@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Billing System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 1em;
+      text-align: center;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #333;
+      flex-wrap: wrap;
+    }
+
+    nav button {
+      padding: 14px 20px;
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    nav button.active {
+      background-color: #4CAF50;
+    }
+
+    .tab {
+      display: none;
+      padding: 20px;
+    }
+
+    .tab.active {
+      display: block;
+    }
+
+    .table-container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 500px;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 1.2em;
+    }
+
+    select, input[type="submit"], input[type="number"] {
+      padding: 10px;
+      margin-top: 10px;
+      width: 100%;
+      max-width: 400px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Billing System</h1>
+</header>
+
+<nav>
+  <button class="tablink active" onclick="openTab('customers')">Customers</button>
+  <button class="tablink" onclick="openTab('products')">Products</button>
+  <button class="tablink" onclick="openTab('viewBills')">View Bills</button>
+  <button class="tablink" onclick="openTab('createBill')">Create Bill</button>
+</nav>
+
+<div id="customers" class="tab active">
+  <div class="table-container">
+    <h2>Customers</h2>
+    <div id="customerContent" class="loading">Loading customers...</div>
+  </div>
+</div>
+
+<div id="products" class="tab">
+  <div class="table-container">
+    <h2>Products</h2>
+    <div id="productContent" class="loading">Loading products...</div>
+  </div>
+</div>
+
+<div id="viewBills" class="tab">
+  <div class="table-container">
+    <h2>Existing Bills</h2>
+    <div id="billContent" class="loading">Loading bills...</div>
+  </div>
+</div>
+
+<div id="createBill" class="tab">
+  <div class="table-container">
+    <h2>Create Bill</h2>
+    <form id="billForm">
+      <label for="customerSelect">Select Customer:</label>
+      <select id="customerSelect" required></select>
+
+      <label for="productDropdown">Select Product:</label>
+      <select id="productDropdown" required></select>
+
+      <label for="productQuantity">Quantity:</label>
+      <input type="number" id="productQuantity" min="1" value="1" required />
+
+      <input type="submit" value="Create Bill" />
+    </form>
+  </div>
+</div>
+
+<script>
+  const customersUrl = 'http://localhost:3000/api/customer';
+  const productsUrl = 'http://localhost:3000/api/product';
+  const billsUrl = 'http://localhost:3000/api/bill';
+
+  function openTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tablink').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`.tablink[onclick="openTab('${tabId}')"]`).classList.add('active');
+  }
+
+  // Load customers
+  fetch(customersUrl)
+    .then(res => res.json())
+    .then(customers => {
+      const table = `
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th></tr></thead>
+          <tbody>${customers.map(c => `
+            <tr><td>${c.customer_id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone}</td><td>${c.address}</td></tr>
+          `).join('')}</tbody>
+        </table>
+      `;
+      document.getElementById('customerContent').innerHTML = table;
+
+      const customerSelect = document.getElementById('customerSelect');
+      customerSelect.innerHTML = customers.map(c => `
+        <option value="${c.customer_id}">${c.name}</option>
+      `).join('');
+    });
+
+  // Load products
+  const productMap = {};
+  fetch(productsUrl)
+    .then(res => res.json())
+    .then(products => {
+      const table = `
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Stock</th></tr></thead>
+          <tbody>${products.map(p => `
+            <tr><td>${p.product_id}</td><td>${p.name}</td><td>${p.description}</td><td>${p.price}</td><td>${p.stock_quantity}</td></tr>
+          `).join('')}</tbody>
+        </table>
+      `;
+      document.getElementById('productContent').innerHTML = table;
+
+      const productDropdown = document.getElementById('productDropdown');
+      productDropdown.innerHTML = products.map(p => {
+        productMap[p.product_id] = p;
+        return `<option value="${p.product_id}">${p.name} - $${p.price}</option>`;
+      }).join('');
+    });
+
+  // Load bills
+  function loadBills() {
+    fetch(billsUrl)
+      .then(res => res.json())
+      .then(bills => {
+        if (bills.length === 0) {
+          document.getElementById('billContent').innerHTML = 'No bills found.';
+          return;
+        }
+        const table = `
+          <table>
+            <thead><tr><th>ID</th><th>Customer</th><th>Product</th><th>Quantity</th><th>Total</th><th>Date</th></tr></thead>
+            <tbody>${bills.map(b => `
+              <tr>
+                <td>${b.bill_id}</td>
+                <td>${b.customer_name}</td>
+                <td>${b.product_name}</td>
+                <td>${b.quantity}</td>
+                <td>$${b.total}</td>
+                <td>${new Date(b.date).toLocaleDateString()}</td>
+              </tr>
+            `).join('')}</tbody>
+          </table>
+        `;
+        document.getElementById('billContent').innerHTML = table;
+      });
+  }
+
+  loadBills();
+
+  // Handle 1-1 bill form submission
+  document.getElementById('billForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const customer_id = document.getElementById('customerSelect').value;
+    const product_id = document.getElementById('productDropdown').value;
+    const quantity = parseInt(document.getElementById('productQuantity').value, 10);
+
+    if (!customer_id || !product_id || quantity < 1) {
+      alert("Please fill in all fields correctly.");
+      return;
+    }
+
+    const body = { customer_id, product_id, quantity };
+
+    fetch(billsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Failed to create bill");
+      return res.json();
+    })
+    .then(() => {
+      alert("Bill created successfully!");
+      document.getElementById('billForm').reset();
+      loadBills();
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error creating bill.");
+    });
+  });
+</script>
+
+</body>
+</html>

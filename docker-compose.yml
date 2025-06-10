@@ -1,0 +1,43 @@
+services:
+  # NGINX as the load balancer
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"  # Expose port 80 on host to container's port 80
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Custom NGINX config
+    networks:
+      - app-network
+    depends_on:
+       - bill-app
+
+  bill-app:
+    image: bill-app:latest
+    container_name : bill-app
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    env_file:
+      - .env
+  # PostgreSQL Database Service
+  db:
+    image: pgth:latest  # Replace with your custom PostgreSQL image
+    container_name: pgth
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust  # Allow connections without authentication (for dev purposes)
+    ports:
+      - "5433:5432"  # Expose PostgreSQL port to the host
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data
+    networks:
+      - app-network
+      
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

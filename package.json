@@ -1,0 +1,30 @@
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node --env-file=.env.local dist/index.js ",
+    "prod": "node --env-file=.env dist/index.js",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/indexx.ts",
+    "lint": "eslint 'src/**/*.ts'"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.30",
+    "@types/pg": "^8.15.4",
+    "dotenv": "^16.5.0",
+    "eslint": "^9.28.0",
+    "express": "^5.1.0",
+    "install": "^0.13.0",
+    "nodemon": "^3.1.10",
+    "npm": "^11.4.1",
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv-cli": "^8.0.0",
+    "pg": "^8.16.0"
+  }
+}
